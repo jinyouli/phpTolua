@@ -1,23 +1,4 @@
 
--- local socket = require("socket")
--- print(socket._VERSION)
-
-
-function hex2bin( hexstr )
-	local str = ""
-    for i = 1, string.len(hexstr) - 1, 2 do  
-    	local doublebytestr = string.sub(hexstr, i, i+1);  
-    	local n = tonumber(doublebytestr, 16);  
-    	if 0 == n then  
-        	str = str .. '\00'
-    	else  
-        	str = str .. string.format("%c", n)
-    	end
-    end 
-    return str
-end
-
-
 local bit={data32={}}
 for i=1,32 do
     bit.data32[i]=2^(32-i)
@@ -164,7 +145,6 @@ print(bit:_and(7,4))                    -->     4
 print(bit:_or(5,2))                     -->     7
 
 
-
 -- 转成Ascii
 function numToAscii(num)
     num = num % 256;
@@ -181,18 +161,6 @@ function int32ToBufStr(num)
     return str;
 end
 
-
-secret = hex2bin('c21f1ac3611de25abf25984ab7e85c47b3791a2c')
-
-print(secret)
-
-
-time = 54320248
-cycle = int32ToBufStr(time)
-
-print('....')
-print(cycle)
-print('aaa.....')
 
 function numToHex(num)
     num = num % 256;
@@ -225,33 +193,162 @@ function bit:d2b2(arg)
     return  tr
 end  
 
-print(table.concat(bit:d2b2(time)))   
 
-cycle = bit:b2d(table.concat(bit:d2b2(time)))
+function hex2str(hex)
+	--判断输入类型
+	if (type(hex)~="string") then
+		return nil,"hex2str invalid input type"
+	end
+	--拼接字符串
+	local index=1
+	local ret=""
+	for index=1,hex:len() do
+		ret=ret..string.format("%02X",hex:sub(index):byte())
+	end
+ 
+	return ret
+end
 
--- void uint32_pack(char *out, uint32 in)
--- {
--- 	out[0] = in&0xff; in>>=8;
--- 	out[1] = in&0xff; in>>=8;
--- 	out[2] = in&0xff; in>>=8;
--- 	out[3] = in&0xff;
--- }
+function StringToHex(str)
+    Strlen = string.len(str)
+    Hex = 0x0
+    for i = 1, Strlen do
+        temp = string.byte(str,i)
+        if ((temp >= 48) and (temp <= 57)) then
+            temp = temp - 48
+        elseif ((temp >= 97) and (temp <= 102)) then
+            temp = temp - 87
+        elseif ((temp >= 65) and (temp <= 70)) then
+            temp = temp - 55
+        end
+        Hex =  Hex + temp*(16^(Strlen-i))
+    end
+    return (Hex)
+end
+
+function str2hex(str)
+	--判断输入类型	
+	if (type(str)~="string") then
+	    return nil,"str2hex invalid input type"
+	end
+	--滤掉分隔符
+	str=str:gsub("[%s%p]",""):upper()
+	--检查内容是否合法
+	if(str:find("[^0-9A-Fa-f]")~=nil) then
+	    return nil,"str2hex invalid input content"
+	end
+	--检查字符串长度
+	if(str:len()%2~=0) then
+	    return nil,"str2hex invalid input lenth"
+	end
+	--拼接字符串
+	local index=1
+	local ret=""
+	for index=1,str:len(),2 do
+	    ret=ret..string.char(tonumber(str:sub(index,index+1),16))
+	end
+ 
+	return ret
+end
+
+function byte2bin(n)
+    local t = {}
+    for i=42,0,-1 do
+        t[#t+1] = math.floor(n / 2^i)
+        n = n % 2^i
+    end
+    return table.concat(t)
+end
+
+function hex2bin( hexstr )
+	local str = ""
+    for i = 1, string.len(hexstr) - 1, 2 do  
+    	local doublebytestr = string.sub(hexstr, i, i+1);  
+    	local n = tonumber(doublebytestr, 16);  
+    	if 0 == n then  
+        	str = str .. '\00'
+    	else  
+        	str = str .. string.format("%c", n)
+    	end
+    end 
+    return str
+end
 
 
-print(cycle)
--- bit:print(bit:d2b(bit:_lshift(time,24)))   
--- print(bit:_lshift(time,24))
+
+secret = hex2bin('c21f1ac3611de25abf25984ab7e85c47b3791a2c')
+current_time = os.time() * 1000
+waitingtime = 30000
+time = math.floor(current_time / waitingtime)
+time = 1629804213799
+
+
+cycle = tostring(string.format("0x%06X",time))
+
+if #cycle > 10 then
+    cycle = string.sub(cycle,#cycle-7,#cycle) 
+else
+    cycle = string.sub(cycle,#cycle-3,#cycle)
+    addnum = 8 - #cycle
+    for i=1,addnum,1 do
+        cycle = '0' .. cycle
+    end
+end
+
+hexstr = cycle
+str = ''
+for i = #hexstr, 0, -2 do  
+    local doublebytestr = string.sub(hexstr, i-1, i);  
+    print(doublebytestr)
+    print('..')
+
+    
+
+    local n = tonumber(doublebytestr, 16);  
+
+
+
+    if 0 == n or n == nil then  
+        str = '\00' .. str  
+    else  
+        str = string.format("%c", n) .. str  
+    end
+end 
+
+print(str)
+
+print('..')
+print((tostring(cycle)))
+print(#str)
+print('..')
+
+-- local str = ""
+-- str = str .. '\00'
+-- str = str .. '\00'
+-- str = str .. '\00'
+-- str = str .. '\00'
+-- str = str .. string.format("%c", 3)
+-- str = str .. string.format("%c", 60)
+-- str = str .. string.format("%c", 222)
+-- str = str .. string.format("%c", 200)
+
+-- str = '\00' ..'\00' .. '\00' .. '\00' .. '\00' .. str
 
 
 
 local sha = require "sha2"
 local hmac = sha.hmac
 -- local your_hmac = hmac(sha.sha1, secret, cycle) 
-local your_hmac = hmac(sha.sha1, secret, table.concat(bit:d2b2(time)) )
-print('your_hash =')
+local your_hmac = hmac(sha.sha1, secret, str)
+print('..')
 print(your_hmac)
 
--- 79a3a13ea85d9af13cc5fc96beaf794ab04d221b
+-- aa2edf176cb2e38a0a78bdbfe7275154fede16e3
+
+mac_part = 'ab38fa16'
+print(tonumber(mac_part, 16))
+print(bit:_and(tonumber(mac_part, 16),0x7fffffff))
+
 
 
 
