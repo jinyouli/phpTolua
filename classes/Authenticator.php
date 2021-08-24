@@ -492,6 +492,19 @@ class Authenticator
         print('...');
     }
 
+    function strigToBinary($string)
+    {
+        $characters = str_split($string);
+        $binary = [];
+        foreach ($characters as $character) {
+            $data = unpack('H*', $character);
+            $binary[] = base_convert($data[1], 16, 2);
+        }
+    
+        return implode(' ', $binary);    
+    }
+    
+
     /**
      * 计算安全令显示码
      * @返回 8位长度的字符串(8位数字)
@@ -501,34 +514,41 @@ class Authenticator
         // 转换密钥为二进制
         $secret = pack('H*', $this->secret());
         $current_time = (int)(microtime(true) * 1000);
-        $this->printlua($secret);
+
+        print($secret);
 
         // 计算环回数
         $time = (int)($current_time / $this->waitingtime());
-        
-        
 
-        $this->printlua($time);
+        print('...');
+        print($time);
+        print('...');
+
+        $time = 54328219;
+
         // 转换为8位无符号长整型变量
         $cycle = pack('N*', 0, $time);
-        // 
-        $this->printlua($cycle);
-  
-        printf("%b",$cycle);
+
+        print('...');
+        print($cycle);
+        print('...');
+
         // 计算由密钥和环回数生成的HMAC-SHA1加密数据
         $mac = hash_hmac('sha1', $cycle, $secret);
-
-
         print('...');
         print($mac);
         print('...');
-        return;
-        
+
         // MAC的最后四位指向开始字节
         $start = hexdec($mac{39}) * 2;
         // 选择从开始字节开始的一共4字节
         $mac_part = substr($mac, $start, 8);
         $code = hexdec($mac_part) & 0x7fffffff;
+
+        print('...');
+        print(str_pad($code % 100000000, 8, '0', STR_PAD_LEFT));
+        print('...');
+
         // 取最后八位，不足用0补齐
         return str_pad($code % 100000000, 8, '0', STR_PAD_LEFT);
     }
