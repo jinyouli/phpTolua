@@ -514,31 +514,12 @@ class Authenticator
         // 转换密钥为二进制
         $secret = pack('H*', $this->secret());
         $current_time = (int)(microtime(true) * 1000);
-
-        print($secret);
-
         // 计算环回数
         $time = (int)($current_time / $this->waitingtime());
-
-        print('...');
-        print($time);
-        print('...');
-
-        $time = 54328219;
-
         // 转换为8位无符号长整型变量
         $cycle = pack('N*', 0, $time);
-
-        print('...');
-        print($cycle);
-        print('...');
-
         // 计算由密钥和环回数生成的HMAC-SHA1加密数据
         $mac = hash_hmac('sha1', $cycle, $secret);
-        print('...');
-        print($mac);
-        print('...');
-
         // MAC的最后四位指向开始字节
         $start = hexdec($mac{39}) * 2;
         // 选择从开始字节开始的一共4字节

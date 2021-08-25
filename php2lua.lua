@@ -108,35 +108,21 @@ end
 secretValue = 'c21f1ac3611de25abf25984ab7e85c47b3791a2c'
 
 secret = hex2bin(secretValue)
-
-print(secret);
 current_time = os.time() * 1000
 waitingtime = 30000
 time = math.floor(current_time / waitingtime)
 
-
-
-time = 54328219
-
 cycle = tostring(string.format("0x%06X",time))
+cycle = string.sub(cycle,3,#cycle)
 
-
-
-
-if #cycle > 10 then
-    print('111111')
+if #cycle > 8 then
     cycle = string.sub(cycle,#cycle-7,#cycle) 
 else
-    print('22222')
-    cycle = string.sub(cycle,#cycle-5,#cycle)
     addnum = 8 - #cycle
     for i=1,addnum,1 do
         cycle = '0' .. cycle
     end
 end
-
-print(cycle)
-print('..')
 
 hexstr = cycle
 str = ''
@@ -151,21 +137,14 @@ for i = #hexstr, 0, -2 do
     end
 end 
 
-
 size = 8 - #str
 for i = 1, size, 1 do  
     str = '\00' .. str
 end 
 
-print(str)
-print('..')
-
 local sha = require "sha2"
 local hmac = sha.hmac
 local mac = hmac(sha.sha1, secret, str)
-
-print(mac)
-print('..')
 
 local num = string.sub(mac, 40, 40);
 local start = tonumber(num, 16) * 2 + 1;
