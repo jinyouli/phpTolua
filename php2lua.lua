@@ -110,45 +110,50 @@ local rsa_mod = "104890018807986556874007710914205443157030159668034197186125678
 local rsa_exp = '257';
 local keysize = 1024;
 
-function restore_code_from_char(restore)
-{
-    for (i = 0; i < 10; ++i) {
+
+function restoreCodeFromChar(restore)
+    for i = 0, 10, 1 do
         local num = string.sub(restore, i, i);
         -- 转 ASCII码
         local c = string.byte(num) 
 
-        if (c > 47 && c < 58)
-            c -= 48;
-        else {
-            if (c > 82)
-                --$c; // S
-            if (c > 78)
-                --$c; // O
-            if (c > 75)
-                --$c; // L
-            if (c > 72)
-                --$c; // I
-            c -= 55;
-        }
+        if c > 47 and c < 58 then
+            c = c - 48;
+        else 
+            if c > 82 then
+                c = c - 1;
+            elseif c > 78 then
+                c = c - 1;
+            elseif c > 75 then
+                c = c - 1;
+            elseif c > 72 then
+                c = c - 1;
+            end
+            c = c - 55;
+        end
         restore = string.sub(restore,0,i) .. string.char(c) .. string.sub(restore,i,#cycle)
-    }
+    end
     return restore;
-}
+end
+
+for i=10,1,-1 do
+    print(i)
+end
 
 function bchexdec(hex)
-{
     dec = 0;
     len = #hex;
-    for (i = 1; i <= len; i++)
+    for i = 1, len, 1 do
         bcpow = 16;
-        for (m = 0; m<(len - i); m++) {
+        for m = 0, (len - i), 1 do 
             bcpow = bcpow * 16;
-        }
+        end
         local hexStr = string.sub(code, i-1, i-1);
 
         dec = bcadd(dec, bcmul(tostring(tonumber(string,format("0x%06X",hexStr),10)), bcpow));
+    end
     return dec;
-}
+end
 
 function str2hex(str)
 	--判断输入类型	
@@ -176,25 +181,25 @@ function str2hex(str)
 end
 
 function encrypt(text)
-{
     num = 100;
     text = tonumber(str2hex(text), 16);
     local cover = text ^ rsa_exp;
     n = cover % rsa_mod;
+
     ret = '';
-    while (n > 0) {
+    while (n > 0) 
+    do
         ret = string.char(n % 256) .. ret;
         x = n / 256;
         n = math.floor(x * num + 0.5) / num;
-    }
+    end
     return ret;
-}
+end
 
 
 function decrypt(code, key)
-{
     ret = '';
-    for (i = 0; i < #code; ++i) {
+    for i = 0, #code, 1 do
 
         local codeStr = string.sub(code, i, i);
         local keyStr = string.sub(key, i, i);
@@ -204,16 +209,18 @@ function decrypt(code, key)
         -- ASCII码 转 字符
         local xor = bit:_xor(c,k)
         ret = ret .. string.char(xor);
-    }
+    end
     return ret;
-}
+end
+
+local sha = require "sha2"
+local sha1 = sha.sha1
 
 function create_key(size)
-{
-    local rand = random(999999);
-    return string.sub(sha1(rand),0,size);                         
+    local rand = math.random(999999);
+    return string.sub(sha1(tostring(rand)),0,size);                         
     -- sha1运算随机生成数字后截取指定数量的字节
-}
+end
 
 -- @字符串，通过恢复码恢复设备URL
 
