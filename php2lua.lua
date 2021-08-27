@@ -111,33 +111,36 @@ local rsa_exp = '257';
 local keysize = 1024;
 
 
-function restoreCodeFromChar(restore)
-    for i = 0, 10, 1 do
-        local num = string.sub(restore, i, i);
+function restore_code_from_char(restore)
+
+    local result = ''
+    for i = 1, 10, 1 do
+        local num = restore:sub(i, i);
         -- 转 ASCII码
         local c = string.byte(num) 
 
         if c > 47 and c < 58 then
             c = c - 48;
         else 
-            if c > 82 then
-                c = c - 1;
-            elseif c > 78 then
-                c = c - 1;
-            elseif c > 75 then
-                c = c - 1;
-            elseif c > 72 then
+            if c > 82 then 
                 c = c - 1;
             end
+            if c > 78 then
+                c = c - 1;
+            end
+            if c > 75 then
+                c = c - 1;
+            end
+            if c > 72 then
+                c = c - 1;
+            end
+            
             c = c - 55;
         end
-        restore = string.sub(restore,0,i) .. string.char(c) .. string.sub(restore,i,#cycle)
+        result = result .. string.char(c) 
     end
-    return restore;
-end
 
-for i=10,1,-1 do
-    print(i)
+    return result;
 end
 
 function bchexdec(hex)
@@ -170,19 +173,41 @@ function str2hex(str)
 	if(str:len()%2~=0) then
 	    return nil,"str2hex invalid input lenth"
 	end
+
+    
 	--拼接字符串
 	local index=1
 	local ret=""
 	for index=1,str:len(),2 do
-	    ret=ret..string.char(tonumber(str:sub(index,index+1),16))
+	    ret=ret..tonumber(str:sub(index,index+1),16)
 	end
  
 	return ret
 end
 
+function StringToHex(str)
+    Strlen = string.len(str)
+    Hex = 0x0
+    for i = 1, Strlen do
+        temp = string.byte(str,i)
+        if ((temp >= 48) and (temp <= 57)) then
+            temp = temp - 48
+        elseif ((temp >= 97) and (temp <= 102)) then
+            temp = temp - 87
+        elseif ((temp >= 65) and (temp <= 70)) then
+            temp = temp - 55
+        end
+        Hex =  Hex + temp*(16^(Strlen-i))
+    end
+    print('hex =');
+    print(Hex);
+    return (Hex)
+end
+
 function encrypt(text)
     num = 100;
-    text = tonumber(str2hex(text), 16);
+    text = tonumber(tostring(str2hex(text)), 16);
+    
     local cover = text ^ rsa_exp;
     n = cover % rsa_mod;
 
@@ -199,10 +224,9 @@ end
 
 function decrypt(code, key)
     ret = '';
-    for i = 0, #code, 1 do
-
-        local codeStr = string.sub(code, i, i);
-        local keyStr = string.sub(key, i, i);
+    for i = 1, #code, 1 do
+        local codeStr = code:sub(i, i);
+        local keyStr = key:sub(i, i);
         c = string.byte(codeStr);
         k = string.byte(keyStr);
 
@@ -222,28 +246,34 @@ function create_key(size)
     -- sha1运算随机生成数字后截取指定数量的字节
 end
 
--- @字符串，通过恢复码恢复设备URL
 
+
+-- ````````````````````````````````````````````````````````````````````````````````````````````
+
+-- @字符串，通过恢复码恢复设备URL
 local server = "https://www.battlenet.com.cn";
 local restore_uri = "/enrollment/initiatePaperRestore.htm";
 local restore_validate_uri = "/enrollment/validatePaperRestore.htm";
 
-orgin = 'CN-2108-1723-2724'
-x = string.gsub(orgin, "-", "")
--- print("\n",x);
-print(x)
-print('...')
 
+orgin = 'CN-2108-1723-2724'
+serial = string.gsub(orgin, "-", "")
+challenge = 'challenge'
 
 local restore = 'H7Q11XFZ76'
-local q_sourcestr = string.format("%q", restore)
-local upperstr = string.upper(q_sourcestr);
-print(upperstr)
+restore_code = restore_code_from_char(restore);
 
+local serialStr = serial .. challenge
+local hmac = sha.hmac
+local mac = hmac(sha.sha1, restore_code, serialStr)
 
 enc_key = create_key(20);
+data = serial .. encrypt(mac .. enc_key);
 
+response = '7f39809dd70a42a822ff';
+data = decrypt(response, enc_key);
 
+-- print(data)
 
 
 
