@@ -146,44 +146,44 @@ end
 function bchexdec(hex)
     dec = 0;
     len = #hex;
+
     for i = 1, len, 1 do
         bcpow = 16;
-        for m = 0, (len - i), 1 do 
-            bcpow = bcpow * 16;
-        end
-        local hexStr = string.sub(code, i-1, i-1);
+        m = i - 1;
+        n = len - i + 1;
 
-        dec = bcadd(dec, bcmul(tostring(tonumber(string,format("0x%06X",hexStr),10)), bcpow));
+        -- for me = 1, n, 1 do 
+        --     bcpow = bcpow * 16;
+        -- end
+        bcpow = math.pow(16,n)
+
+        local hexStr = hex:sub(m, m);
+        num = tonumber(hexStr, 16)
+
+        if num ~= nil then 
+
+            bcmul = num * math.floor(bcpow);
+            dec = dec + bcmul;
+        end
+        
     end
-    return dec;
+
+    return string.format("%.0f", dec);
 end
 
 function str2hex(str)
-	--判断输入类型	
-	if (type(str)~="string") then
-	    return nil,"str2hex invalid input type"
-	end
-	--滤掉分隔符
-	str=str:gsub("[%s%p]",""):upper()
-	--检查内容是否合法
-	if(str:find("[^0-9A-Fa-f]")~=nil) then
-	    return nil,"str2hex invalid input content"
-	end
-	--检查字符串长度
-	if(str:len()%2~=0) then
-	    return nil,"str2hex invalid input lenth"
-	end
 
-    
 	--拼接字符串
 	local index=1
 	local ret=""
-	for index=1,str:len(),2 do
-	    ret=ret..tonumber(str:sub(index,index+1),16)
+	for index=1,str:len(),1 do
+        value = str:sub(index,index)
+	    ret = ret .. StringToHex(value)
 	end
  
 	return ret
 end
+
 
 function StringToHex(str)
     Strlen = string.len(str)
@@ -199,25 +199,27 @@ function StringToHex(str)
         end
         Hex =  Hex + temp*(16^(Strlen-i))
     end
-    print('hex =');
-    print(Hex);
     return (Hex)
 end
 
 function encrypt(text)
-    num = 100;
-    text = tonumber(tostring(str2hex(text)), 16);
-    
-    local cover = text ^ rsa_exp;
-    n = cover % rsa_mod;
+    local num = 100;
+    -- text = str2hex(text)
+
+    atext = '4e15dde09b3dae2657425bd54c71e7a080957ae03038636237626537326462373863666532656237';
+    text = bchexdec(atext)
+       
+    local n =  math.fmod(rsa_mod,math.pow(text,rsa_exp))
 
     ret = '';
     while (n > 0) 
     do
-        ret = string.char(n % 256) .. ret;
+        a = math.floor(math.fmod(n,256))
+        ret = string.char(a) .. ret;
         x = n / 256;
         n = math.floor(x * num + 0.5) / num;
     end
+    
     return ret;
 end
 
@@ -268,12 +270,16 @@ local hmac = sha.hmac
 local mac = hmac(sha.sha1, restore_code, serialStr)
 
 enc_key = create_key(20);
+
+enc_key = '4e516c1721855e56392e';
+mac = 'N???=?&WB[?Lq砀?z?';
+
 data = serial .. encrypt(mac .. enc_key);
 
 response = '7f39809dd70a42a822ff';
 data = decrypt(response, enc_key);
 
--- print(data)
+print(data)
 
 
 
