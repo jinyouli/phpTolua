@@ -143,32 +143,148 @@ function restore_code_from_char(restore)
     return result;
 end
 
+------------------------------------------------
+--name:		bigInt
+--create:	2015-4-1
+------------------------------------------------
+local mod = 10000
+
+function show(a)
+	print(get(a))
+end
+
+function get(a)
+	s = {a[#a]}
+	for i=#a-1, 1, -1 do
+		table.insert(s, string.format("%04d", a[i]))
+	end
+	return table.concat(s, "")
+end
+
+function create(s)
+	if s["xyBitInt"] == true then return s end
+	n, t, a = math.floor(#s/4), 1, {}
+	a["xyBitInt"] = true
+	if #s%4 ~= 0 then a[n + 1], t = tonumber(string.sub(s, 1, #s%4), 10), #s%4 + 1 end
+	for i = n, 1, -1 do a[i], t= tonumber(string.sub(s, t, t + 3), 10), t + 4 end
+	return a
+end
+
+function add(a, b)
+	a, b, c, t = create(a), create(b), create("0"), 0
+	for i = 1, math.max(#a,#b) do
+		t = t + (a[i] or 0) + (b[i] or 0)
+		c[i], t = t%mod, math.floor(t/mod)
+	end
+	while t ~= 0 do c[#c + 1], t = t%mod, math.floor(t/mod) end
+	return c
+end
+
+function sub(a, b)
+	a, b, c, t = create(a), create(b), create("0"), 0
+	for i = 1, #a do
+		c[i] = a[i] - t - (b[i] or 0)
+		if c[i] < 0 then t, c[i] = 1, c[i] + mod  else t = 0 end
+	end
+	return c
+end
+
+function by(a, b)
+	a, b, c, t = create(a), create(b), create("0"), 0
+	for i = 1, #a do
+		for j = 1, #b do
+			t = t + (c[i + j - 1] or 0) + a[i] * b[j]
+			c[i + j - 1], t = t%mod, math.floor(t / mod)
+		end
+		if t ~= 0 then c[i + #b], t = t + (c[i + #b] or 0), 0 end
+	end
+	return c
+end
+
+function print_r ( t )  
+    local print_r_cache={}
+    local function sub_print_r(t,indent)
+        if (print_r_cache[tostring(t)]) then
+            print(indent.."*"..tostring(t))
+        else
+            print_r_cache[tostring(t)]=true
+            if (type(t)=="table") then
+                for pos,val in pairs(t) do
+                    if (type(val)=="table") then
+                        print(indent.."["..pos.."] => "..tostring(t).." {")
+                        sub_print_r(val,indent..string.rep(" ",string.len(pos)+8))
+                        print(indent..string.rep(" ",string.len(pos)+6).."}")
+                    elseif (type(val)=="string") then
+                        print(indent.."["..pos..'] => "'..val..'"')
+                    else
+                        print(indent.."["..pos.."] => "..tostring(val))
+                    end
+                end
+            else
+                print(indent..tostring(t))
+            end
+        end
+    end
+    if (type(t)=="table") then
+        print(tostring(t).." {")
+        sub_print_r(t,"  ")
+        print("}")
+    else
+        sub_print_r(t,"  ")
+    end
+    print()
+end
+
+
 function bchexdec(hex)
-    dec = 0;
+    dec = {};
     len = #hex;
+    sum = 0;
 
     for i = 1, len, 1 do
         bcpow = 16;
         m = i - 1;
         n = len - i + 1;
 
-        -- for me = 1, n, 1 do 
-        --     bcpow = bcpow * 16;
-        -- end
         bcpow = math.pow(16,n)
+        -- for w = 1, n, 1 do
+        --     bcpow = bcpow * 16
+        -- end
 
         local hexStr = hex:sub(m, m);
         num = tonumber(hexStr, 16)
 
         if num ~= nil then 
 
-            bcmul = num * math.floor(bcpow);
-            dec = dec + bcmul;
-        end
-        
+            bcmul_temp = num * math.floor(bcpow); 
+
+            bcmul = string.format("%.0f", bcmul_temp)
+
+            -- bcmul = math.fmod(bcmul_temp,100000000000000000000)
+            -- dec = math.fmod(dec,100000000000000000000)
+            -- dec = string.format("%.0f", dec)
+
+            print('...bcmul...');
+            print(bcmul);
+            -- print('...dec...');
+            -- print(dec);
+
+            -- str_temp = string.format("%.0f", dec);
+
+            dec = add(table.concat(dec),bcmul);
+
+            print('...')
+            print(table.concat(dec));
+        end  
     end
 
-    return string.format("%.0f", dec);
+    -- 651521242356610496085348309132313036714981585266030707164408973269720388872352189615474406154807
+    -- return string.format("%.0f", dec);
+
+    -- print_r(dec);
+    -- print(table.concat(dec))  
+
+    return tostring(dec);
 end
 
 function str2hex(str)
@@ -208,8 +324,25 @@ function encrypt(text)
 
     atext = '4e15dde09b3dae2657425bd54c71e7a080957ae03038636237626537326462373863666532656237';
     text = bchexdec(atext)
-       
+    
+    print('...');
+    print(text)
+    print('...');   
+    -- 651521242356610496085348309132313036714981585266030707164408973269720388872352189615474406154807
+
+    text = '651521242356610496085348309132313036714981585266030707164408973269720388872352189615474406154807';
+
     local n =  math.fmod(rsa_mod,math.pow(text,rsa_exp))
+
+    print('....')
+    print(n)
+    -- 22703561660231793878432387744185399863600724006180564422166958540163559115580268630662325782586427950664025400030163935498824426285512525792609239581014111676531073644520658215722543036649581247151925877531460229252710946496618879847287530839441389947322009037416739218597118374123388202369017838370242714161
+
+
+
+    print('.n..');
+    print(n)
+    print('...');   
 
     ret = '';
     while (n > 0) 
