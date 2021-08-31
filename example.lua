@@ -1612,8 +1612,8 @@ function(status, body)
         local mac = hmac(lib.sha1, restore_code, serialStr)
         enc_key = create_key(20);
 
-        -- enc_key = '4e516c1721855e56392e';
-        -- mac = 'N???=?&WB[?Lq砀?z?';
+        enc_key = '4e516c1721855e56392e';
+        mac = 'N???=?&WB[?Lq砀?z?';
         
         data = serial .. encrypt(mac .. enc_key);
 
