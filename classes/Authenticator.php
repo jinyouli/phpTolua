@@ -110,15 +110,20 @@ class Authenticator
         if (!is_null($serial)) {
             $this->set_serial($serial);
         }
+
         if (!is_null($region)) {
             $this->set_region($region);
         }
+
+        
         if (!is_null($secret)) {
             $this->set_secret($secret);
         }
         if (!is_null($sync)) {
             $this->set_sync($sync);
         }
+
+        
     }
 
     // </editor-fold>
@@ -277,6 +282,9 @@ class Authenticator
      */
     private function _set_sync($server_time)
     {
+        $time = time();
+        $date = date('Y-m-d H:i:s', $time);
+
         $server_time = hexdec(bin2hex($server_time));   //服务器时间十进制
         $current_time = (int)(microtime(true) * 1000); //本机时间十进制
         $this->set_sync($server_time - $current_time);  //设置同步差值
@@ -294,7 +302,7 @@ class Authenticator
 
     private function set_region($region)
     {                                 //设置地域
-        $region = strtoupper($region);                                  //转换为大写
+        $region = 'CN';                                  //转换为大写
         if (!in_array($region, self::$accepted_region))                 //检测是否为EU/US/CN
             throw new DataAuthenticatorException('非法的地区设置 : ' . $region . '.');
         $this->region = $region;
@@ -326,6 +334,7 @@ class Authenticator
     {
         switch (strtolower($this->region())) {
             case "cn":
+                // return "https://mobile-service.battlenet.com.cn";
                 return "https://www.battlenet.com.cn";
             case "us":
                 return "http://us.mobile-service.blizzard.com";
@@ -347,8 +356,8 @@ class Authenticator
     {
         switch (strtolower($region)) {
             case "cn":
-                return "https://mobile-service.battlenet.com.cn";
-//                return "https://www.battlenet.com.cn";
+                // return "https://mobile-service.battlenet.com.cn";
+                return "https://www.battlenet.com.cn";
             case "us":
                 return "http://us.mobile-service.blizzard.com";
             case "eu":
@@ -388,9 +397,9 @@ class Authenticator
         }
         $errNo = curl_errno($ch);
         $result = curl_exec($ch);
-        curl_close($ch);
-        
-        return $result;
+
+
+		return $result;
     }
 
     private function create_key($size)
@@ -408,9 +417,8 @@ class Authenticator
         $model = str_pad('ALPC_IPHONE7PLUS_OLAUTH', 16, chr(0), STR_PAD_RIGHT);   //截取16位，不足用0补齐
 
         $data = $f_code . $enc_key . $this->region() . $model;                //0:1,1-37:37位随机密钥,38-39:US/EU/CN/KR,40-55:16位设备信息
-        $response = $this->send(self::$initialize_uri, self::GENERATE_SIZE, $this->encrypt($data)); //将56位数据通过RSA-1024加密后发送，并返回信息
 
-        
+        $response = $this->send(self::$initialize_uri, self::GENERATE_SIZE, $this->encrypt($data)); //将56位数据通过RSA-1024加密后发送，并返回信息
 
         $data = $this->decrypt(substr($response, 8), $enc_key);         //解密接收到的返回信息
         $this->_set_sync(substr($response, 0, 8));                      //设置同步时间差
@@ -425,17 +433,28 @@ class Authenticator
 
     private function do_restore($restore_code)
     {
-        $serial = $this->plain_serial();                                //无横线的序列号格式
+        $serial = $this->plain_serial();       
+        
+        //无横线的序列号格式
         $challenge = $this->send(self::$restore_uri, self::RESTORE_CHALLENGE_SIZE, $serial);
         $restore_code = Authenticator_Crypto::restore_code_from_char(strtoupper($restore_code));
-        $mac = hash_hmac('sha1', $serial . $challenge, $restore_code, true);
+
+        $serialStr = $serial . $challenge;
+        $mac = hash_hmac('sha1', $serialStr, $restore_code, true);
         $enc_key = $this->create_key(20);
         $data = $serial . $this->encrypt($mac . $enc_key);
-        $response = $this->send(self::$restore_validate_uri, self::RESTORE_VALIDATE_SIZE, $data);
 
-        $data = $this->decrypt($response, $enc_key);
-        $this->_set_secret($data);
-        //$this->synchronize();
+        $response = $this->send(self::$restore_validate_uri, self::RESTORE_VALIDATE_SIZE, $data);
+        
+        $ret = empty($response);
+        if(!$ret){
+            $data = $this->decrypt($response, $enc_key);
+            $this->_set_secret($data);
+            $this->synchronize(); 
+        }else{
+            $this->secret = "0";
+        }
+        
     }
 
     /**
@@ -478,6 +497,19 @@ class Authenticator
         return $this->sync;
     }
 
+    function strigToBinary($string)
+    {
+        $characters = str_split($string);
+        $binary = [];
+        foreach ($characters as $character) {
+            $data = unpack('H*', $character);
+            $binary[] = base_convert($data[1], 16, 2);
+        }
+    
+        return implode(' ', $binary);    
+    }
+    
+
     /**
      * 计算安全令显示码
      * @返回 8位长度的字符串(8位数字)
@@ -486,8 +518,9 @@ class Authenticator
     {
         // 转换密钥为二进制
         $secret = pack('H*', $this->secret());
+        $current_time = (int)(microtime(true) * 1000);
         // 计算环回数
-        $time = (int)($this->servertime() / $this->waitingtime());
+        $time = (int)($current_time / $this->waitingtime());
         // 转换为8位无符号长整型变量
         $cycle = pack('N*', 0, $time);
         // 计算由密钥和环回数生成的HMAC-SHA1加密数据
@@ -497,6 +530,7 @@ class Authenticator
         // 选择从开始字节开始的一共4字节
         $mac_part = substr($mac, $start, 8);
         $code = hexdec($mac_part) & 0x7fffffff;
+
         // 取最后八位，不足用0补齐
         return str_pad($code % 100000000, 8, '0', STR_PAD_LEFT);
     }

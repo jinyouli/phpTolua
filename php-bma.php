@@ -39,11 +39,16 @@ if($auth === false) {
 }
 echo $message." - Serial: ".$auth->serial()." Secret: ".$auth->secret()." Restore: " . $auth->restore_code() . "\r\n\r\n";
 
-while(true) {
-	$code = $auth->code();
-	echo "key: $code\r\n";
-	// $wait = 1 + ($auth->waitingtime() - $auth->elapsedtime()) / 1000;
-	// echo 'waiting for '.$wait." sec\r\n\r\n";
-	sleep(2);
+echo($auth->secret());
+if($auth->secret() === "0"){
+	echo("没数据！！！");
+}else{
+	while(true) {
+		$code = $auth->code();
+		echo "key: $code\r\n";
+		sleep(2);
+	}
 }
+
+
 
