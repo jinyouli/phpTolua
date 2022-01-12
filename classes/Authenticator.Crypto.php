@@ -7,7 +7,6 @@
 
 class Authenticator_Crypto
 {
-
     static private $rsa_mod = "104890018807986556874007710914205443157030159668034197186125678960287470894290830530618284943118405110896322835449099433232093151168250152146023319326491587651685252774820340995950744075665455681760652136576493028733914892166700899109836291180881063097461175643998356321993663868233366705340758102567742483097";
     static private $rsa_exp = '257';
     static private $keysize = 1024;
@@ -16,8 +15,7 @@ class Authenticator_Crypto
     {
 
         $atext = bin2hex($text);
-        $atext = '4e15dde09b3dae2657425bd54c71e7a080957ae03038636237626537326462373863666532656237';
-
+ 
         $text = self::bchexdec($atext);
         $n = bcmod(bcpow($text, self::$rsa_exp), self::$rsa_mod);
 
@@ -32,7 +30,8 @@ class Authenticator_Crypto
     static public function decrypt($code, $key)
     {
         $ret = '';
-        for ($i = 0; $i < strlen($code); ++$i) {
+        for ($i = 0; $i < strlen($key); ++$i) {
+            
             $c = ord($code{$i});
             $k = ord($key{$i});
             $ret .= chr($c ^ $k);
@@ -90,19 +89,17 @@ class Authenticator_Crypto
     {
         $dec = 0;
         $len = strlen($hex);
+        print($hex);
 
-        for ($i = 1; $i <= $len; $i++){
+        for ($i = $len; $i >= 1; $i--){
             $m = $i - 1;
             $n = $len - $i;
 
             $offset_a = strval(hexdec($hex[$m]));
             $offset_b = bcpow('16', strval($n));
             $bcmulValue = bcmul($offset_a , $offset_b);
-
             $dec = bcadd($dec, $bcmulValue);
         }
-        // $dec = bcadd($dec, bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
-
         return $dec;
     }
 
